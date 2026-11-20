@@ -6,6 +6,7 @@ export interface WujieTab {
   fullPath: string
   /** 固定页签不会被任何关闭操作移除。 */
   pinned?: boolean
+  fixed?: boolean
 }
 
 export interface WujieTabsState {
@@ -20,8 +21,12 @@ export interface WujieTabsManager {
   subscribe(listener: WujieTabsListener): () => void
   open(tab: WujieTab): void
   activate(id: string | null): void
-  getCloseFallback(id: string): Readonly<WujieTab> | undefined
+  getCloseFallback(id: string, ids?: Iterable<string>): Readonly<WujieTab> | undefined
   close(id: string): void
+  closeTabs(ids: Iterable<string>): void
+  getCloseTabIds(id: string | undefined, mode: 'left' | 'right' | 'other' | 'all'): string[]
+  setPinned(id: string, pinned: boolean): void
+  moveTab(id: string, targetId: string): void
   closeOthers(id: string): void
   closeAll(): void
 }
@@ -57,3 +62,40 @@ export declare function onWujieProps(
   callback: (props: Record<string, any>) => void,
   options?: { retries?: number; interval?: number },
 ): void
+
+export type TabActionResult = void | boolean | Promise<void | boolean>
+
+export interface WujieTabActions {
+  openTab?: (tab: WujieTab) => TabActionResult
+  changeActiveTab?: (id: string) => TabActionResult
+  closeTabs?: (ids: string[]) => TabActionResult
+  refreshTab?: (id: string) => TabActionResult
+  refreshTabAll?: () => TabActionResult
+  openDetachedTab?: (id: string) => TabActionResult
+}
+
+export interface TabsManager extends WujieTabsManager {
+  openTab(tab: WujieTab): TabActionResult
+  changeActiveTab(id: string): TabActionResult
+  closeTab(id?: string): TabActionResult
+  closeTabsByLeft(id?: string): TabActionResult
+  closeTabsByRight(id?: string): TabActionResult
+  closeTabsByOther(id?: string): TabActionResult
+  closeTabByAll(): TabActionResult
+  updateTabOptions(options: { _viewPinned?: boolean }, id?: string): void
+  refreshTab?: WujieTabActions['refreshTab']
+  refreshTabAll?: WujieTabActions['refreshTabAll']
+  openDetachedTab?: WujieTabActions['openDetachedTab']
+}
+
+export interface DynamicTabsProps {
+  manager?: TabsManager
+  type?: 'text' | 'line' | 'card' | 'rounded' | 'capsule'
+  draggable?: boolean
+  titleMaxLength?: number
+  hideFirst?: boolean
+}
+
+export declare function createTabsManager(options?: NonNullable<Parameters<typeof createWujieTabs>[0]> & {
+  actions?: WujieTabActions
+}): TabsManager
